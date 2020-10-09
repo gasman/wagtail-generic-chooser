@@ -1,4 +1,4 @@
-function createChooserWidget(id, opts) {
+function ChooserWidget(id, opts) {
     /*
     id = the ID of the HTML element where chooser behaviour should be attached
     opts = dictionary of configuration options, which may include:
@@ -7,30 +7,47 @@ function createChooserWidget(id, opts) {
     */
 
     opts = opts || {};
+    var self = this;
 
-    var chooserElement = $('#' + id + '-chooser');
-    var docTitle = chooserElement.find('.title');
-    var input = $('#' + id);
-    var editLink = chooserElement.find('.edit-link');
+    this.chooserElement = $('#' + id + '-chooser');
+    this.titleElement = this.chooserElement.find('.title');
+    this.inputElement = $('#' + id);
+    this.editLinkElement = this.chooserElement.find('.edit-link');
 
-    $('.action-choose', chooserElement).on('click', function() {
-        var responses = {};
-        responses[opts.modalWorkflowResponseName || 'chosen'] = function(snippetData) {
-            input.val(snippetData.id);
-            docTitle.text(snippetData.string);
-            chooserElement.removeClass('blank');
-            editLink.attr('href', snippetData.edit_link);
-        };
+    this.modalResponses = {};
+    this.modalResponses[opts.modalWorkflowResponseName || 'chosen'] = function(data) {
+        self.setState(data);
+    };
 
-        ModalWorkflow({
-            url: chooserElement.data('choose-modal-url'),
-            onload: GENERIC_CHOOSER_MODAL_ONLOAD_HANDLERS,
-            responses: responses
-        });
+    $('.action-choose', this.chooserElement).on('click', function() {
+        self.openModal();
     });
 
-    $('.action-clear', chooserElement).on('click', function() {
-        input.val('');
-        chooserElement.addClass('blank');
+    $('.action-clear', this.chooserElement).on('click', function() {
+        self.setState(null);
     });
 }
+
+ChooserWidget.prototype.getModalURL = function() {
+    return this.chooserElement.data('choose-modal-url');
+}
+
+ChooserWidget.prototype.openModal = function() {
+    ModalWorkflow({
+        url: this.getModalURL(),
+        onload: GENERIC_CHOOSER_MODAL_ONLOAD_HANDLERS,
+        responses: this.modalResponses
+    });
+};
+
+ChooserWidget.prototype.setState = function(data) {
+    if (data) {
+        this.inputElement.val(data.id);
+        this.titleElement.text(data.string);
+        this.chooserElement.removeClass('blank');
+        this.editLinkElement.attr('href', data.edit_link);
+    } else {
+        this.inputElement.val('');
+        this.chooserElement.addClass('blank');
+    }
+};
